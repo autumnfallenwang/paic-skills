@@ -171,6 +171,74 @@ ELK log levels: `1` = ERROR, `2` = INFO, `3` = DEBUG, `4` = ALL (default: depend
 
 Note: `elk clean` and `elk purge` require `--name` / `-n` — they do NOT operate on "all" streamers. `elk stop`, `elk hardstop`, and `elk down` operate on all if no name given.
 
+### Querying Local Elasticsearch
+
+After `pctl elk start` streams logs into local ES, you can query them directly. This is different from `pctl log search` which queries the remote AIC API.
+
+**Connection**: `http://localhost:9200`, no authentication.
+
+**Index pattern**: `paic-logs-{profile_name}-{YYYY.MM}` (e.g., `paic-logs-sandbox-2026.03`). Indices rotate monthly. Use `paic-logs-*` to search across all profiles/months, or `paic-logs-sandbox*` for a specific profile.
+
+**Document schema**:
+
+| Field | ES Type | Description |
+|-------|---------|-------------|
+| `timestamp` | `date` | ISO 8601 timestamp |
+| `source` | `keyword` | Log source (e.g., `idm-core`, `am-access`) |
+| `type` | `keyword` | `application/json` or `text/plain` |
+| `payload` | `object` | Log content (flexible structure) |
+
+**Payload structure** depends on the `type` field:
+
+- `text/plain`: `payload` only has `message` — a raw log string with level/logger info embedded in the text.
+- `application/json` (structured logs): `payload` has structured fields:
+
+| Payload Field | Description |
+|---------------|-------------|
+| `payload.message` | Log message (present in both types) |
+| `payload.level` | Log level string (`SEVERE`, `ERROR`, `WARNING`, `INFO`, `DEBUG`, `FINE`, `FINER`, `FINEST`) |
+| `payload.logger` | Java class name (e.g., `org.forgerock.am.health.LivenessCheckEndpoint`) |
+| `payload.transactionId` | Transaction ID for request tracing |
+| `payload.mdc.transactionId` | Same transaction ID (nested in MDC context) |
+| `payload.thread` | Java thread name |
+| `payload.context` | AM context (e.g., `default`) |
+| `payload.timestamp` | Log-level timestamp (may differ slightly from top-level `timestamp`) |
+
+**Retention**: Data auto-deletes after 7 days (ILM policy). Don't search beyond that window.
+
+```bash
+# Check available indices
+curl -s 'localhost:9200/_cat/indices/paic-logs-*?v&s=index'
+
+# Search by source
+curl -s 'localhost:9200/paic-logs-sandbox*/_search?pretty' -H 'Content-Type: application/json' -d '
+{"query":{"match":{"source":"idm-core"}},"size":10,"sort":[{"timestamp":"desc"}]}'
+
+# Search by keyword in message
+curl -s 'localhost:9200/paic-logs-sandbox*/_search?pretty' -H 'Content-Type: application/json' -d '
+{"query":{"match":{"payload.message":"authentication failed"}},"size":10,"sort":[{"timestamp":"desc"}]}'
+
+# Filter by transaction ID
+curl -s 'localhost:9200/paic-logs-sandbox*/_search?pretty' -H 'Content-Type: application/json' -d '
+{"query":{"match":{"payload.transactionId":"abc-123-def"}}}'
+
+# Errors — structured logs (application/json) use payload.level
+curl -s 'localhost:9200/paic-logs-sandbox*/_search?pretty' -H 'Content-Type: application/json' -d '
+{"query":{"bool":{"must":[{"match":{"payload.level":"SEVERE"}},{"range":{"timestamp":{"gte":"now-1h"}}}]}}}'
+
+# Errors — text/plain logs have level in the message string
+curl -s 'localhost:9200/paic-logs-sandbox*/_search?pretty' -H 'Content-Type: application/json' -d '
+{"query":{"bool":{"must":[{"match":{"payload.message":"SEVERE"}},{"match":{"type":"text/plain"}}]}}}'
+
+# Count docs per source
+curl -s 'localhost:9200/paic-logs-sandbox*/_search?pretty' -H 'Content-Type: application/json' -d '
+{"size":0,"aggs":{"by_source":{"terms":{"field":"source"}}}}'
+```
+
+**When to use local ES vs `pctl log search`**:
+- `pctl log search` — searches historical logs from the AIC API. Looking into the past.
+- Local ES queries — queries live-streamed data captured by `pctl elk start`. Requires ELK running. Better for real-time monitoring, complex queries, and aggregations.
+
 ## Historical Log Search
 
 **Syntax**: `pctl log search [options] <conn_name>`
