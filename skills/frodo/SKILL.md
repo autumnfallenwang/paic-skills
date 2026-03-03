@@ -1,9 +1,9 @@
 ---
 name: frodo
-description: "frodo CLI (v3.1.0) for managing PingOne Advanced Identity Cloud (AIC). Handles config export/import, journeys/trees, SAML providers, scripts, OAuth2 clients, ESV secrets/variables, log tailing, mappings, themes, services, agents, authorization policies, and tenant promotion. Contains PAIC team environment names, standard flag combos, and workflow recipes."
+description: "frodo CLI (v3.1.0) for managing PingOne Advanced Identity Cloud (AIC). Handles config export/import, journeys/trees, SAML providers, scripts, OAuth2 clients, ESV secrets/variables, log tailing, mappings, themes, services, agents, authorization policies, and tenant promotion. Contains environment shorthands, standard flag combos, and workflow recipes."
 ---
 
-# Frodo CLI — PAIC Team Skill
+# Frodo CLI Skill
 
 For full flag details, run `frodo <command> <action> --help`.
 
@@ -16,15 +16,14 @@ Use these shorthand substrings with any frodo command (matches against saved con
 
 | Shorthand | Tenant | Purpose |
 |-----------|--------|---------|
-| `sb2` | commkentsb2 | Sandbox 2 |
-| `sb3` | commkentsb3 | Sandbox 3 |
-| `wf` | commkentwf | Development |
-| `uat2` | commkentwf-uat2 | UAT 2 |
-| `cidmhcsc` | cidmhcsc | CIDM HCSC dev |
+| `sandbox` | yourtenantsandbox | Sandbox |
+| `dev` | yourtenantdev | Development |
+| `staging` | yourtenantstaging | Staging |
+| `prod` | yourtenantprod | Production |
 
 ```bash
 frodo conn list                  # See all saved profiles
-frodo conn describe sb2          # Describe a specific profile
+frodo conn describe sandbox          # Describe a specific profile
 ```
 
 ## Config Export/Import
@@ -33,26 +32,26 @@ frodo conn describe sb2          # Describe a specific profile
 
 ```bash
 # Team standard — snapshot to dated folder
-frodo config export -sxoAND ./sb2_20260227 sb2
+frodo config export -sxoAND ./sandbox_20260227 sandbox
 
 # Everything to single file
-frodo config export -a sb2
+frodo config export -a sandbox
 
 # Specific realm only
-frodo config export -ar sb2 bravo
+frodo config export -ar sandbox alpha
 
 # With encrypted secret values for cross-env migration
-frodo config export -a --include-active-values --target sb3 sb2
+frodo config export -a --include-active-values --target dev sandbox
 ```
 
 **Syntax**: `frodo config import [options] [host] [realm] [username] [password]`
 
 ```bash
 # Import from separate files
-frodo config import -A -D ./sb2_export sb3
+frodo config import -A -D ./sandbox_export dev
 
 # Import from single file
-frodo config import -a -f sb2-all.json sb3
+frodo config import -a -f sandbox-all.json dev
 ```
 
 Note: `-g` for global-only, `-r` for realm-only, `-R` for read-only config, `-d` to include default scripts.
@@ -62,17 +61,17 @@ Note: `-g` for global-only, `-r` for realm-only, `-R` for read-only config, `-d`
 **Syntax**: `frodo journey <list|export|import|delete|describe|disable|enable|prune> [options] [host] [realm]`
 
 ```bash
-frodo journey list sb2
-frodo journey export -i "MyLoginJourney" sb2               # Single with deps
-frodo journey export -i "MyLoginJourney" --no-deps sb2     # Single without deps
-frodo journey export -A sb2                                 # All to separate files
-frodo journey import -i "MyLoginJourney" -f MyLoginJourney.journey.json sb3
-frodo journey import -A -D ./journeys sb3
-frodo journey delete -i "MyLoginJourney" sb2
-frodo journey describe -i "MyLoginJourney" sb2
-frodo journey disable -i "MyLoginJourney" sb2
-frodo journey enable -i "MyLoginJourney" sb2
-frodo journey prune sb2                                     # Clean orphaned artifacts
+frodo journey list sandbox
+frodo journey export -i "MyLoginJourney" sandbox               # Single with deps
+frodo journey export -i "MyLoginJourney" --no-deps sandbox     # Single without deps
+frodo journey export -A sandbox                                 # All to separate files
+frodo journey import -i "MyLoginJourney" -f MyLoginJourney.journey.json dev
+frodo journey import -A -D ./journeys dev
+frodo journey delete -i "MyLoginJourney" sandbox
+frodo journey describe -i "MyLoginJourney" sandbox
+frodo journey disable -i "MyLoginJourney" sandbox
+frodo journey enable -i "MyLoginJourney" sandbox
+frodo journey prune sandbox                                     # Clean orphaned artifacts
 ```
 
 Note: `--no-deps` skips scripts, SAML providers, themes, social IdPs. `--no-coords` skips node positions.
@@ -82,21 +81,21 @@ Note: `--no-deps` skips scripts, SAML providers, themes, social IdPs. `--no-coor
 **Syntax**: `frodo saml <list|export|import|delete|describe> [options] [host] [realm]`
 
 ```bash
-frodo saml list sb2
-frodo saml export -A sb2
-frodo saml export -i "https://sp.example.com/saml" sb2
-frodo saml import -i "https://sp.example.com/saml" -f provider.saml.json sb3
-frodo saml delete -i "https://sp.example.com/saml" sb2
-frodo saml describe -i "https://sp.example.com/saml" sb2
+frodo saml list sandbox
+frodo saml export -A sandbox
+frodo saml export -i "https://sp.example.com/saml" sandbox
+frodo saml import -i "https://sp.example.com/saml" -f provider.saml.json dev
+frodo saml delete -i "https://sp.example.com/saml" sandbox
+frodo saml describe -i "https://sp.example.com/saml" sandbox
 ```
 
 Related — Circles of Trust and metadata:
 
 ```bash
-frodo saml cot list sb2
-frodo saml cot export -A sb2
-frodo saml cot import -A sb3
-frodo saml metadata export -i "https://sp.example.com/saml" sb2
+frodo saml cot list sandbox
+frodo saml cot export -A sandbox
+frodo saml cot import -A dev
+frodo saml metadata export -i "https://sp.example.com/saml" sandbox
 ```
 
 ## Script
@@ -104,13 +103,13 @@ frodo saml metadata export -i "https://sp.example.com/saml" sb2
 **Syntax**: `frodo script <list|export|import|delete|describe> [options] [host] [realm]`
 
 ```bash
-frodo script list sb2
-frodo script export -A sb2                    # All to separate files
-frodo script export -n "MyScript" sb2         # By name
-frodo script export -i <script-uuid> sb2      # By UUID
-frodo script import -A sb3
-frodo script delete -i <script-uuid> sb2
-frodo script describe -i <script-uuid> sb2
+frodo script list sandbox
+frodo script export -A sandbox                    # All to separate files
+frodo script export -n "MyScript" sandbox         # By name
+frodo script export -i <script-uuid> sandbox      # By UUID
+frodo script import -A dev
+frodo script delete -i <script-uuid> sandbox
+frodo script describe -i <script-uuid> sandbox
 ```
 
 ## OAuth2 Client
@@ -118,11 +117,11 @@ frodo script describe -i <script-uuid> sb2
 **Syntax**: `frodo oauth client <list|export|import|delete> [options] [host] [realm]`
 
 ```bash
-frodo oauth client list sb2
-frodo oauth client export -A sb2
-frodo oauth client export -i "myClientId" sb2
-frodo oauth client import -A sb3
-frodo oauth client delete -i "myClientId" sb2
+frodo oauth client list sandbox
+frodo oauth client export -A sandbox
+frodo oauth client export -i "myClientId" sandbox
+frodo oauth client import -A dev
+frodo oauth client delete -i "myClientId" sandbox
 ```
 
 ## ESV (Secrets & Variables)
@@ -130,11 +129,11 @@ frodo oauth client delete -i "myClientId" sb2
 **Syntax**: `frodo esv <secret|variable> <list|describe|export|import|set> [options] [host]`
 
 ```bash
-frodo esv secret list -lu sb2                            # List with usage info
-frodo esv secret describe -i "esv-my-secret" sb2
-frodo esv variable list sb2
-frodo esv variable describe -i "esv-my-variable" sb2
-frodo esv apply sb2                                      # Apply pending changes
+frodo esv secret list -lu sandbox                            # List with usage info
+frodo esv secret describe -i "esv-my-secret" sandbox
+frodo esv variable list sandbox
+frodo esv variable describe -i "esv-my-variable" sandbox
+frodo esv apply sandbox                                      # Apply pending changes
 ```
 
 Note: `esv apply` triggers pod restart, takes up to 10 minutes. `-l` for long format, `-u` for usage info.
@@ -144,13 +143,13 @@ Note: `esv apply` triggers pod restart, takes up to 10 minutes. `-l` for long fo
 **Syntax**: `frodo log <tail|fetch|list> [options] [host]`
 
 ```bash
-frodo log tail sb2                         # All logs, all levels
-frodo log tail -l 0 sb2                    # Errors only (0=ERROR, 1=WARN, 2=INFO, 3=DEBUG, 4=ALL)
-frodo log tail -c am-core,idm-core sb2     # Specific sources
-frodo log tail -t <txid> sb2               # Filter by transaction ID
-frodo log tail -d sb2                      # Default noise filters
-frodo log fetch sb2                        # Historical logs
-frodo log list sb2                         # Available log sources
+frodo log tail sandbox                         # All logs, all levels
+frodo log tail -l 0 sandbox                    # Errors only (0=ERROR, 1=WARN, 2=INFO, 3=DEBUG, 4=ALL)
+frodo log tail -c am-core,idm-core sandbox     # Specific sources
+frodo log tail -t <txid> sandbox               # Filter by transaction ID
+frodo log tail -d sandbox                      # Default noise filters
+frodo log fetch sandbox                        # Historical logs
+frodo log list sandbox                         # Available log sources
 ```
 
 ## Other Resources (Same Pattern)
@@ -161,38 +160,38 @@ Consistent flags: `-a` (all/single file), `-A` (all/separate files), `-i` (speci
 
 ```bash
 # Applications (NOT OAuth2 clients — use frodo oauth client for those)
-frodo app list sb2
-frodo app export -A sb2
-frodo app import -A sb3
+frodo app list sandbox
+frodo app export -A sandbox
+frodo app import -A dev
 
 # Email templates (delete new in v3.1.0)
-frodo email template list sb2
-frodo email template export -A sb2
-frodo email template delete -i <template-id> sb2
+frodo email template list sandbox
+frodo email template export -A sandbox
+frodo email template delete -i <template-id> sandbox
 
 # IDM mappings
-frodo mapping list sb2
-frodo mapping export -A sb2
-frodo mapping rename sb2             # Legacy (sync/) → new (mapping/) naming
-frodo mapping rename -l sb2          # New → legacy
+frodo mapping list sandbox
+frodo mapping export -A sandbox
+frodo mapping rename sandbox             # Legacy (sync/) → new (mapping/) naming
+frodo mapping rename -l sandbox          # New → legacy
 
 # IDM config objects
-frodo idm list sb2
-frodo idm export -A sb2
-frodo idm count -n alpha_user sb2
+frodo idm list sandbox
+frodo idm export -A sandbox
+frodo idm count -n alpha_user sandbox
 
 # Social identity providers, AM services, themes, realms, roles, agents, authn, authz
-frodo idp list sb2
-frodo service list sb2
-frodo theme list sb2
-frodo realm list sb2
-frodo realm describe sb2
-frodo role list sb2
-frodo agent list sb2
-frodo authn describe sb2
-frodo authz policy list sb2
-frodo authz set list sb2
-frodo authz type list sb2
+frodo idp list sandbox
+frodo service list sandbox
+frodo theme list sandbox
+frodo realm list sandbox
+frodo realm describe sandbox
+frodo role list sandbox
+frodo agent list sandbox
+frodo authn describe sandbox
+frodo authz policy list sandbox
+frodo authz set list sandbox
+frodo authz type list sandbox
 ```
 
 ## Admin
@@ -200,21 +199,21 @@ frodo authz type list sb2
 **Syntax**: `frodo admin <command> [options] [host]`
 
 ```bash
-frodo admin list-oauth2-clients-with-admin-privileges sb2
-frodo admin grant-oauth2-client-admin-privileges sb2
-frodo admin revoke-oauth2-client-admin-privileges sb2
-frodo admin list-static-user-mappings sb2
-frodo admin repair-org-model sb2
-frodo admin federation list sb2
-frodo info sb2                                    # Tenant version/connection info
-frodo info --json sb2
+frodo admin list-oauth2-clients-with-admin-privileges sandbox
+frodo admin grant-oauth2-client-admin-privileges sandbox
+frodo admin revoke-oauth2-client-admin-privileges sandbox
+frodo admin list-static-user-mappings sandbox
+frodo admin repair-org-model sandbox
+frodo admin federation list sandbox
+frodo info sandbox                                    # Tenant version/connection info
+frodo info --json sandbox
 ```
 
 ## Gotchas
 
 - `frodo app` manages AIC application templates (v2+), NOT OAuth2 clients. Use `frodo oauth client` for OAuth2.
 - `frodo config help export` works (config has a special `help` subcommand with examples), but other commands need `frodo <cmd> <action> --help`.
-- Connection profiles use URL substring matching — `sb2` works because it uniquely matches the sb2 tenant URL.
+- Connection profiles use URL substring matching — `sand` works because it uniquely matches the sandbox tenant URL.
 - `esv apply` triggers a pod restart that takes up to 10 minutes. Don't re-run or assume failure if slow.
 - Export flags `-a`/`-A` in v3.0.8+ no longer stop prematurely on errors.
 - `email template delete` is new in v3.1.0.

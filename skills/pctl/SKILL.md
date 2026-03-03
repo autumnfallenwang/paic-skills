@@ -1,9 +1,9 @@
 ---
 name: pctl
-description: "pctl CLI (v0.6.3) — PAIC Control, a unified testing CLI for PingOne Advanced Identity Cloud (AIC). Handles connection profiles, JWT token generation/decoding/validation, authentication journey testing, local ELK stack management (Elasticsearch + Kibana log streaming), historical log search, and configuration change tracking. Contains PAIC team environment names, ELK workflow recipes, and gotchas."
+description: "pctl CLI (v0.6.3) — PAIC Control, a unified testing CLI for PingOne Advanced Identity Cloud (AIC). Handles connection profiles, JWT token generation/decoding/validation, authentication journey testing, local ELK stack management (Elasticsearch + Kibana log streaming), historical log search, and configuration change tracking. Contains environment shorthands, ELK workflow recipes, and gotchas."
 ---
 
-# pctl CLI — PAIC Team Skill
+# pctl CLI Skill
 
 For full flag details, run `pctl <command> <action> --help`.
 
@@ -15,16 +15,15 @@ Use these connection profile names with any pctl command:
 
 | Profile Name | Tenant | Purpose |
 |-------------|--------|---------|
-| `sb2` | commkentsb2 | Sandbox 2 |
-| `sb3` | commkentsb3 | Sandbox 3 |
-| `wf` | commkentwf | Development |
-| `uat2` | commkentwf-uat2 | UAT 2 |
-| `cidmhcsc` | cidmhcsc | CIDM HCSC dev |
+| `sandbox` | yourtenantsandbox | Sandbox |
+| `dev` | yourtenantdev | Development |
+| `staging` | yourtenantstaging | Staging |
+| `prod` | yourtenantprod | Production |
 
 ```bash
 pctl conn list                  # See all saved profiles
-pctl conn show sb2              # Show details of a specific profile
-pctl conn validate sb2          # Validate credentials
+pctl conn show sandbox              # Show details of a specific profile
+pctl conn validate sandbox          # Validate credentials
 ```
 
 ## Connection Profile Management
@@ -43,10 +42,10 @@ pctl conn add myenv -c /path/to/conn.yaml
 pctl conn add myenv --platform https://... --sa-id "..." --sa-jwk-file ... --no-validate
 
 # Show, validate, delete
-pctl conn show sb2
-pctl conn validate sb2
-pctl conn delete sb2              # Prompts for confirmation
-pctl conn delete sb2 --force      # Skip confirmation
+pctl conn show sandbox
+pctl conn validate sandbox
+pctl conn delete sandbox              # Prompts for confirmation
+pctl conn delete sandbox --force      # Skip confirmation
 ```
 
 Connection YAML format:
@@ -69,9 +68,9 @@ Note: JWK credentials can be provided either as `--sa-jwk-file /path/to/file.jso
 
 ```bash
 # Generate access token from connection profile
-pctl token get sb2                       # Raw token string
-pctl token get sb2 --format bearer       # With "Bearer " prefix
-pctl token get sb2 --format json         # Full JSON response
+pctl token get sandbox                       # Raw token string
+pctl token get sandbox --format bearer       # With "Bearer " prefix
+pctl token get sandbox --format json         # Full JSON response
 
 # Inspect a JWT (no verification, just decode)
 pctl token decode "eyJhbGciOiJS..."
@@ -130,30 +129,30 @@ pctl elk init
 pctl elk health
 
 # 3. Start streaming logs from a connection profile
-pctl elk start sb2                              # Streamer named "sb2"
-pctl elk start sb2 --name my-streamer           # Custom streamer name
-pctl elk start sb2 --log-level 3                # DEBUG level
-pctl elk start sb2 -c am-core,idm-core          # Specific components
+pctl elk start sandbox                              # Streamer named "sandbox"
+pctl elk start sandbox --name my-streamer           # Custom streamer name
+pctl elk start sandbox --log-level 3                # DEBUG level
+pctl elk start sandbox -c am-core,idm-core          # Specific components
 
 # 4. Check streamer status
 pctl elk status                                 # All streamers
-pctl elk status --name sb2                      # Specific streamer
+pctl elk status --name sandbox                      # Specific streamer
 
 # 5. Stop streamers
 pctl elk stop                                   # Stop all
-pctl elk stop --name sb2                        # Stop specific
+pctl elk stop --name sandbox                        # Stop specific
 ```
 
 ### Data Management
 
 ```bash
 # Clean index data but keep streamer running (name required)
-pctl elk clean --name sb2
-pctl elk clean --name sb2 --force               # Skip confirmation
+pctl elk clean --name sandbox
+pctl elk clean --name sandbox --force               # Skip confirmation
 
 # Purge streamer completely — stop + delete indices (name required)
-pctl elk purge --name sb2
-pctl elk purge --name sb2 --force               # Skip confirmation
+pctl elk purge --name sandbox
+pctl elk purge --name sandbox --force               # Skip confirmation
 ```
 
 ### Teardown
@@ -178,23 +177,23 @@ Note: `elk clean` and `elk purge` require `--name` / `-n` — they do NOT operat
 
 ```bash
 # Last 24h from idm-config (all defaults)
-pctl log search sb2
+pctl log search sandbox
 
 # Last 7 days, specific component, with filter
-pctl log search sb2 -c idm-config --days 7 -q '/payload/objectId co "endpoint/"'
+pctl log search sandbox -c idm-config --days 7 -q '/payload/objectId co "endpoint/"'
 
 # Specific date range
-pctl log search sb2 -c am-access --from 2025-10-01 --to 2025-10-06
+pctl log search sandbox -c am-access --from 2025-10-01 --to 2025-10-06
 
 # Filter by transaction ID
-pctl log search sb2 --txid "abc-123-def"
+pctl log search sandbox --txid "abc-123-def"
 
 # Errors only
-pctl log search sb2 -l 1
+pctl log search sandbox -l 1
 
 # Save to file
-pctl log search sb2 -c idm-config --days 7 -o logs.jsonl
-pctl log search sb2 -c idm-config --format json -o report.json
+pctl log search sandbox -c idm-config --days 7 -o logs.jsonl
+pctl log search sandbox -c idm-config --format json -o report.json
 ```
 
 Log levels: `1` = ERROR, `2` = INFO (default), `3` = DEBUG, `4` = ALL.
@@ -211,51 +210,51 @@ Note: `--days` overrides `--from`/`--to` if both are provided. Use `--no-default
 
 ```bash
 # Endpoint changes
-pctl log changes sb2 --type endpoint --name my_endpoint
+pctl log changes sandbox --type endpoint --name my_endpoint
 
 # Connector changes (last 30 days)
-pctl log changes sb2 --type connector --name MyConnector --days 30
+pctl log changes sandbox --type connector --name MyConnector --days 30
 
 # Email template changes
-pctl log changes sb2 --type emailtemplate --name welcome-email
+pctl log changes sandbox --type emailtemplate --name welcome-email
 
 # Mapping changes
-pctl log changes sb2 --type mapping --name managedAlpha_user
+pctl log changes sandbox --type mapping --name managedAlpha_user
 
 # Access control changes (no --name needed, global config)
-pctl log changes sb2 --type access --days 30
+pctl log changes sandbox --type access --days 30
 
 # Repo changes (no --name needed)
-pctl log changes sb2 --type repo --days 7
+pctl log changes sandbox --type repo --days 7
 ```
 
 ### AM-Config Types
 
 ```bash
 # Script changes (name auto-resolved to UUID)
-pctl log changes sb2 --type script --name "My Test Script"
+pctl log changes sandbox --type script --name "My Test Script"
 
 # Journey changes
-pctl log changes sb2 --type journey --name MyLoginJourney --days 30
+pctl log changes sandbox --type journey --name MyLoginJourney --days 30
 
 # SAML entity changes
-pctl log changes sb2 --type saml --name "https://example.com/saml/logout/"
+pctl log changes sandbox --type saml --name "https://example.com/saml/logout/"
 ```
 
 ### Output Formats
 
 ```bash
 # JSON (default, human-readable)
-pctl log changes sb2 --type endpoint --name my_endpoint --format json
+pctl log changes sandbox --type endpoint --name my_endpoint --format json
 
 # JSONL (one object per line, for piping)
-pctl log changes sb2 --type endpoint --name my_endpoint --format jsonl
+pctl log changes sandbox --type endpoint --name my_endpoint --format jsonl
 
 # JS (JavaScript, for embedding)
-pctl log changes sb2 --type endpoint --name my_endpoint --format js
+pctl log changes sandbox --type endpoint --name my_endpoint --format js
 
 # Save to file
-pctl log changes sb2 --type endpoint --name my_endpoint -o report.json
+pctl log changes sandbox --type endpoint --name my_endpoint -o report.json
 ```
 
 Supported types: `endpoint`, `connector`, `emailtemplate`, `mapping`, `access`, `repo` (IDM-Config) and `script`, `journey`, `saml` (AM-Config).
