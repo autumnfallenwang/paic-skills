@@ -194,6 +194,28 @@ frodo authz set list sandbox
 frodo authz type list sandbox
 ```
 
+## IDM Endpoint Development (frodo3074)
+
+> **Temporary**: `frodo3074` is a custom build that adds `-x`/`--extract` to `idm export` and `idm import`. This flag splits inline JavaScript from endpoint JSON into separate `.js` files, making endpoint code easier to edit and diff. Use `frodo3074` instead of `frodo` for IDM endpoint work. This will be merged into mainline frodo in the future.
+
+```bash
+# Export all IDM configs with JavaScript extraction
+frodo3074 idm export -xAND ./exports sandbox
+
+# Export single endpoint with JS extraction, no metadata
+frodo3074 idm export -i endpoint/custom_api -f custom_api.idm.json -xN sandbox
+
+# Import after modifications (rehydrates .js back into JSON)
+frodo3074 idm import -i endpoint/custom_api -f custom_api.idm.json sandbox
+```
+
+```bash
+# frodo3074 config export — extracts scripts AND endpoint JS (mainline frodo -x only extracts scripts)
+frodo3074 config export -sxoAND ./sandbox sandbox
+```
+
+Note: `-x` extracts JS into `.js` files alongside the `.idm.json` on export, and rehydrates them back on import. Without `-x`, endpoint JavaScript is embedded inline in the JSON (hard to read/edit).
+
 ## Admin
 
 **Syntax**: `frodo admin <command> [options] [host]`
